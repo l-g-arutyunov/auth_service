@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+    <property dbms="postgresql,mssql,oracle" value="false" name="autoIncrement"/>
+    <property dbms="h2" value="true" name="autoIncrement"/>
+
+    <changeSet id="1.00.01-auth_user-0001" author="leo" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <sequenceExists sequenceName="auth_user_id_seq" schemaName="auth"/>
+            </not>
+        </preConditions>
+        <createSequence sequenceName="auth_user_id_seq" schemaName="auth" startValue="1" incrementBy="1"/>
+    </changeSet>
+
+    <changeSet id="1.00.01-auth_user-0002" author="leo" failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="auth_user" schemaName="auth"/>
+            </not>
+        </preConditions>
+        <createTable tableName="auth_user" schemaName="auth">
+            <column name="id"
+                    type="numeric(15,0)"
+                    defaultValueSequenceNext="auth_user_id_seq"
+                    autoIncrement="false">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(30)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="phone_number" type="varchar(30)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="password" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="bool">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet author="leo" id="1.00.01-auth_user-0003">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="auth_user" schemaName="auth"/>
+                <not>
+                    <indexExists indexName="auth_user_index_0" schemaName="auth"/>
+                </not>
+            </and>
+        </preConditions>
+        <createIndex indexName="auth_user_index_0" tableName="auth_user" schemaName="auth" clustered="true" unique="true">
+            <column name="username"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="leo" id="1.00.01-auth_user-0004">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="auth_user" schemaName="auth"/>
+                <not>
+                    <indexExists indexName="auth_user_index_1" schemaName="auth"/>
+                </not>
+            </and>
+        </preConditions>
+        <createIndex indexName="auth_user_index_1" tableName="auth_user" schemaName="auth" clustered="true" unique="true">
+            <column name="email"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="leo" id="1.00.01-auth_user-0005">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="auth_user" schemaName="auth"/>
+                <not>
+                    <indexExists indexName="auth_user_index_2" schemaName="auth"/>
+                </not>
+            </and>
+        </preConditions>
+        <createIndex indexName="auth_user_index_2" tableName="auth_user" schemaName="auth" clustered="true" unique="true">
+            <column name="phone_number"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

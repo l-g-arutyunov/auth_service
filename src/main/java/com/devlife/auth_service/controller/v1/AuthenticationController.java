@@ -1,28 +1,37 @@
 package com.devlife.auth_service.controller.v1;
 
-import com.devlife.auth_service.pojo.LoginRequest;
+import com.devlife.auth_service.pojo.JwtResponse;
+import com.devlife.auth_service.pojo.SigninRequest;
+import com.devlife.auth_service.pojo.SignupRequest;
+import com.devlife.auth_service.security.UserDetailsImpl;
+import com.devlife.auth_service.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import javax.naming.AuthenticationException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(name = "/api/v1/auth/")
+@RequestMapping("api/v1/auth/")
 @RequiredArgsConstructor
 public class AuthenticationController {
 
-    public ResponseEntity login(@RequestBody LoginRequest loginRequest) {
-        try {
-            return
-        } catch (AuthenticationException e) {
-            throw new  BadCredentialsException("Invalid login or password");
-        }
+    private final UserService userService;
 
+    @PostMapping("signin")
+    public ResponseEntity<JwtResponse> signin(@RequestBody SigninRequest signinRequest) {
+        JwtResponse jwtResponse = userService.signin(signinRequest);
+        return ResponseEntity.ok(jwtResponse);
     }
 
+    @PutMapping("signup")
+    public ResponseEntity<JwtResponse> signup(@RequestBody SignupRequest signupRequest) {
+        JwtResponse jwtResponse = userService.signup(signupRequest);
+        return ResponseEntity.ok(jwtResponse);
+    }
+
+    @GetMapping("decode")
+    @PreAuthorize("hasAuthority('ROOT')")
+    public ResponseEntity<UserDetailsImpl> decodeJwt(@RequestParam("jwt") String jwt) {
+        return ResponseEntity.ok(userService.decodeJwt(jwt));
+    }
 }

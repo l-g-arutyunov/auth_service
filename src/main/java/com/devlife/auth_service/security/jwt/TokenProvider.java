@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -34,7 +35,9 @@ public class TokenProvider {
     public String createToken(UserDetails userDetails) {
 
         Claims claims = Jwts.claims().setSubject(userDetails.getUsername());
-        claims.put("roles", getRoleNames((List<RoleEntity>) userDetails.getAuthorities()));
+        claims.put("roles", getRoleNames(userDetails.getAuthorities().stream()
+                .map(x -> (RoleEntity) x)
+                .collect(Collectors.toList())));
         claims.put("userDetail", userDetails);
 
         Date now = new Date();
@@ -44,7 +47,7 @@ public class TokenProvider {
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(validity)
-                .signWith(SignatureAlgorithm.HS256, secret)
+                .signWith(SignatureAlgorithm.HS512, secret)
                 .compact();
     }
 

@@ -17,7 +17,8 @@ import java.util.Set;
 public class UserEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "auth_user_id_seq")
+    @SequenceGenerator(name = "auth_user_id_seq", sequenceName = "auth_user_id_seq", allocationSize = 1)
     private Long id;
 
     @Column(name = "username")
@@ -33,7 +34,7 @@ public class UserEntity {
     private String password;
 
     @Column(name = "enabled")
-    private String enabled;
+    private Boolean enabled;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "auth_user_role",

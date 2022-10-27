@@ -35,6 +35,7 @@ public class UserDetailsImpl implements UserDetails {
                 .phoneNumber(user.getPhoneNumber())
                 .password(user.getPassword())
                 .authorities(user.getRoles())
+                .enabled(user.getEnabled())
                 .build();
         return userDetails;
     }
@@ -56,6 +57,6 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }
