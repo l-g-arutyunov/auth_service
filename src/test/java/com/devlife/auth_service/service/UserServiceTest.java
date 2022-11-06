@@ -135,10 +135,6 @@ class UserServiceTest {
         verify(tokenProvider, times(1)).createToken(any());
     }
 
-    @Test
-    void decodeJwt() {
-    }
-
     @SneakyThrows
     @Test
     void isPhoneNumber() {
