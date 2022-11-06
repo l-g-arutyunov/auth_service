@@ -45,6 +45,7 @@ class UserServiceTest {
     );
 
     @Test
+    @DisplayName("signin test")
     void signin() {
         SigninRequest signinRequest = SigninRequest.builder()
                 .authItem("test@test.com")
@@ -83,6 +84,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("signup test")
     void signup() {
         SignupRequest signupRequest = SignupRequest.builder()
                 .email("test@test.com")
@@ -137,6 +139,7 @@ class UserServiceTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("check phone number test")
     void isPhoneNumber() {
         String phoneNumber1 = "8908123123";
         String phoneNumber2 = "+7908123123";
@@ -152,6 +155,7 @@ class UserServiceTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("check email test")
     void isEmail() {
         String email1 = "123@gmail.com";
         String email2 = "@mail.ru";

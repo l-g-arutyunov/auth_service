@@ -27,7 +27,7 @@
                     autoIncrement="false">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="username" type="varchar(30)">
+            <column name="username" type="varchar(36)">
                 <constraints nullable="false"/>
             </column>
             <column name="email" type="varchar(30)">
