@@ -9,7 +9,6 @@ import com.devlife.auth_service.pojo.SignupRequest;
 import com.devlife.auth_service.repository.RoleRepository;
 import com.devlife.auth_service.repository.UserRepository;
 import com.devlife.auth_service.security.UserDetailsImpl;
-import com.devlife.auth_service.security.UserDetailsServiceImpl;
 import com.devlife.auth_service.security.jwt.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,11 +16,13 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
@@ -31,73 +32,91 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final TokenProvider tokenProvider;
-    private final UserDetailsServiceImpl userDetailsService;
+    private final UserDetailsService userDetailsService;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+
+    public static final boolean ENABLED = true;
+    public static final String FIELD_S_1_IS_NOT_UNIQUE = "Field %s1 is not unique";
 
     public JwtResponse signin(SigninRequest signinRequest) {
         String authItem = signinRequest.getAuthItem();
         UserDetailsImpl userDetails = null;
         if (isPhoneNumber(authItem)) {
-            userDetails = (UserDetailsImpl) getUserByPhoneNumber(authItem, signinRequest.getPassword());
+            userDetails = (UserDetailsImpl) getUserByPhoneNumber(authItem);
+        } else if (isEmail(authItem)) {
+            userDetails = (UserDetailsImpl) getUserByEmail(authItem);
         }
         if (userDetails != null) {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userDetails.getUsername(), signinRequest.getPassword()));
-            JwtResponse jwtResponse = JwtResponse.builder()
+            return JwtResponse.builder()
                     .token(tokenProvider.createToken(userDetails))
                     .userDetails(userDetails)
                     .build();
-            return jwtResponse;
         }
         return null;
     }
 
-    private UserDetails getUserByPhoneNumber(String phoneNumber, String password) {
+    private UserDetails getUserByPhoneNumber(String phoneNumber) {
         Optional<UserEntity> userOpt = userRepository.findByPhoneNumber(phoneNumber);
-        if (userOpt.isPresent()) {
-            return userDetailsService.loadUserByUsername(userOpt.get().getUsername());
-        }
-        return null;
+        return userOpt.map(i -> userDetailsService.loadUserByUsername(i.getUsername())).orElse(null);
+    }
+
+    private UserDetails getUserByEmail(String email) {
+        Optional<UserEntity> userOpt = userRepository.findByEmail(email);
+        return userOpt.map(i -> userDetailsService.loadUserByUsername(i.getUsername())).orElse(null);
     }
 
     /**
-     * Проверка на то что передано цифровое значение
+     * Проверка на то что передан номер телефона
      *
      * @param authItem
-     * @return boolean
+     * @return Boolean
      */
-    private boolean isPhoneNumber(String authItem) {
-        Pattern pattern = Pattern.compile("\\d+"); //TODO возможно стоит добавить "+", для +7...
+    private Boolean isPhoneNumber(String authItem) {
+        Pattern pattern = Pattern.compile("\\+?\\d+");
         return pattern.matcher(authItem).matches();
     }
+
+    /**
+     * Проверка на то что передан email
+     *
+     * @param authItem
+     * @return Boolean
+     */
+    private Boolean isEmail(String authItem) {
+        Pattern pattern = Pattern.compile(".+@.+\\..+");
+        return pattern.matcher(authItem).matches();
+    }
+
 
     public JwtResponse signup(SignupRequest signupRequest) {
         RoleEntity role = roleRepository.findByName(RoleEnum.USER)
                 .orElseGet(() -> roleRepository.saveAndFlush(new RoleEntity().builder().name(RoleEnum.USER).build()));
 
         UserEntity user = UserEntity.builder()
-                .username(signupRequest.getUsername())
+                .username(UUID.randomUUID().toString())
                 .email(signupRequest.getEmail())
                 .phoneNumber(signupRequest.getPhoneNumber())
                 .password(passwordEncoder.encode(signupRequest.getPassword()))
                 .roles(Set.of(role))
-                .enabled(true)
+                .enabled(ENABLED)
                 .build();
 
         checkUniqueData(user);
 
+
         UserDetailsImpl userDetails = UserDetailsImpl.build(userRepository.save(user));
-        JwtResponse jwtResponse = JwtResponse.builder()
+        return JwtResponse.builder()
                 .token(tokenProvider.createToken(userDetails))
                 .userDetails(userDetails)
                 .build();
-        return jwtResponse;
     }
 
     private void checkUniqueData(UserEntity user) {
         final UnaryOperator<String> nonUnique = param -> {
             throw new BadCredentialsException(
-                    String.format("Field %s1 is not unique", param)
+                    String.format(FIELD_S_1_IS_NOT_UNIQUE, param)
             );
         };
         if (user.getPhoneNumber() != null && userRepository.existsByPhoneNumber(user.getPhoneNumber())) {
