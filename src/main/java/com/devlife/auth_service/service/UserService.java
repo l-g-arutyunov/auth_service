@@ -92,7 +92,7 @@ public class UserService {
 
     public JwtResponse signup(SignupRequest signupRequest) {
         RoleEntity role = roleRepository.findByName(RoleEnum.USER)
-                .orElseGet(() -> roleRepository.saveAndFlush(new RoleEntity().builder().name(RoleEnum.USER).build()));
+                .orElseGet(() -> roleRepository.saveAndFlush(RoleEntity.builder().name(RoleEnum.USER).build()));
 
         UserEntity user = UserEntity.builder()
                 .username(UUID.randomUUID().toString())
@@ -132,7 +132,6 @@ public class UserService {
 
     public UserDetailsImpl decodeJwt(String jwt) {
         Authentication authentication = tokenProvider.getAuthentication(jwt);
-        authentication.getPrincipal();
         return (UserDetailsImpl) authentication.getPrincipal();
     }
 }
