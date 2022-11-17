@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+      - name: auth-service
+        image: devlifestartup/ENV_JOB_BASE_NAME:ENV_VERSION.ENV_BUILD_NUMBER
+        ports:
+        - containerPort: 8088
+        env:
+          - name: DATASOURCE_HOST
+            value: ENV_DATASOURCE_HOST
+          - name: DATASOURCE_PORT
+            value: ENV_DATASOURCE_PORT
+          - name: SERVICE_NAME
+            value: ENV_SERVICE_NAME
+          - name: SERVICE_PORT
+            value: ENV_SERVICE_PORT
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8088
