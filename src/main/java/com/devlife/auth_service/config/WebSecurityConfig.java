@@ -3,6 +3,7 @@ package com.devlife.auth_service.config;
 import com.devlife.auth_service.security.jwt.AuthTokenFilter;
 import com.devlife.auth_service.security.jwt.TokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,6 +16,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 @Configuration
@@ -24,6 +31,23 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class WebSecurityConfig {
     //private final UserDetailsService userDetailsService; //TODO Описание ниже
     private final TokenProvider tokenProvider;
+
+    @Value("${security.cors.enable:true}")
+    boolean enableCors;
+    @Value("${security.cors.allowall:true}")
+    boolean allowAllCors;
+
+    @Value("${security.cors.allowedorigin:null}")
+    String allowedOrigin;
+
+    @Value("${security.cors.allowedheader:null}")
+    String allowedHeader;
+
+    @Value("${security.cors.allowallmethods:false}")
+    boolean allowAllCorsMethods;
+
+    @Value("${security.cors.allowedmethods:null}")
+    String allowedMethods;
 
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
@@ -48,7 +72,8 @@ public class WebSecurityConfig {
 
         http
                 .csrf().disable()
-                .cors().disable()
+                .cors().configurationSource(corsConfiguration())
+                .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
@@ -68,5 +93,35 @@ public class WebSecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    public CorsConfigurationSource corsConfiguration() {
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        if (!enableCors) {
+            return source;
+        }
+        final CorsConfiguration config = new CorsConfiguration();
+        if (allowAllCors) {
+            config.applyPermitDefaultValues();
+            config.setAllowedMethods(List.of("*"));
+        } else {
+            if (allowedOrigin != null) {
+                for (String origin : allowedOrigin.split(",")) {
+                    config.addAllowedOrigin(origin);
+                }
+            }
+            if (allowedHeader != null) {
+                config.setAllowedHeaders(Arrays.asList(allowedHeader.split(",")));
+            }
+            if (allowAllCorsMethods) {
+                config.setAllowedMethods(List.of("*"));
+            } else {
+                if (allowedMethods != null) {
+                    config.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
+                }
+            }
+        }
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 }
