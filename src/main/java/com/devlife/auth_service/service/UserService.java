@@ -1,6 +1,7 @@
 package com.devlife.auth_service.service;
 
 import com.devlife.auth_service.enums.RoleEnum;
+import com.devlife.auth_service.feign.profile.PrfFeignService;
 import com.devlife.auth_service.model.RoleEntity;
 import com.devlife.auth_service.model.UserEntity;
 import com.devlife.auth_service.pojo.JwtResponse;
@@ -19,10 +20,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
@@ -35,9 +35,11 @@ public class UserService {
     private final UserDetailsService userDetailsService;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+    private final PrfFeignService prfFeignService;
 
     public static final boolean ENABLED = true;
     public static final String FIELD_S_1_IS_NOT_UNIQUE = "Field %s1 is not unique";
+    public static final String BEARER = "Bearer ";
 
     public JwtResponse signin(SigninRequest signinRequest) {
         String authItem = signinRequest.getAuthItem();
@@ -89,13 +91,14 @@ public class UserService {
         return pattern.matcher(authItem).matches();
     }
 
-
+    @Transactional
     public JwtResponse signup(SignupRequest signupRequest) {
         RoleEntity role = roleRepository.findByName(RoleEnum.USER)
                 .orElseGet(() -> roleRepository.saveAndFlush(RoleEntity.builder().name(RoleEnum.USER).build()));
 
+        String username = UUID.randomUUID().toString();
         UserEntity user = UserEntity.builder()
-                .username(UUID.randomUUID().toString())
+                .username(username)
                 .email(signupRequest.getEmail())
                 .phoneNumber(signupRequest.getPhoneNumber())
                 .password(passwordEncoder.encode(signupRequest.getPassword()))
@@ -105,12 +108,24 @@ public class UserService {
 
         checkUniqueData(user);
 
-
         UserDetailsImpl userDetails = UserDetailsImpl.build(userRepository.save(user));
-        return JwtResponse.builder()
-                .token(tokenProvider.createToken(userDetails))
+        String token = tokenProvider.createToken(userDetails);
+        JwtResponse jwtResponse = JwtResponse.builder()
+                .token(token)
                 .userDetails(userDetails)
                 .build();
+
+        Map<Integer, String> contactInfo = new HashMap<>();
+        if (Objects.nonNull(signupRequest.getEmail())) {
+            contactInfo.put(1, signupRequest.getEmail());
+        }
+        if (Objects.nonNull(signupRequest.getPhoneNumber())) {
+            contactInfo.put(2, signupRequest.getPhoneNumber());
+        }
+
+        prfFeignService.initProfile(user.getId(), username, contactInfo, BEARER + token);
+
+        return jwtResponse;
     }
 
     private void checkUniqueData(UserEntity user) {

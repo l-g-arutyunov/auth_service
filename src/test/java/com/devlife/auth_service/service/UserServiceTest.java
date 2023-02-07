@@ -1,6 +1,7 @@
 package com.devlife.auth_service.service;
 
 import com.devlife.auth_service.enums.RoleEnum;
+import com.devlife.auth_service.feign.profile.PrfFeignService;
 import com.devlife.auth_service.model.RoleEntity;
 import com.devlife.auth_service.model.UserEntity;
 import com.devlife.auth_service.pojo.JwtResponse;
@@ -34,6 +35,7 @@ class UserServiceTest {
     private final UserDetailsService userDetailsService = mock(UserDetailsServiceImpl.class);
     private final AuthenticationManager authenticationManager = mock(AuthenticationManager.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+    private final PrfFeignService prfFeignService = mock(PrfFeignService.class);
 
     private final UserService userService = new UserService(
             userRepository,
@@ -41,7 +43,8 @@ class UserServiceTest {
             tokenProvider,
             userDetailsService,
             authenticationManager,
-            passwordEncoder
+            passwordEncoder,
+            prfFeignService
     );
 
     @Test
