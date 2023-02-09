@@ -28,6 +28,8 @@ spec:
             value: ENV_SERVICE_NAME
           - name: SERVICE_PORT
             value: ENV_SERVICE_PORT
+          - name: PROFILE_SERVICE_URL
+            value: 'http://profile-service/profile'
 ---
 apiVersion: v1
 kind: Service
