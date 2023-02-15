@@ -55,8 +55,9 @@ public class UserService {
                     .token(tokenProvider.createToken(userDetails))
                     .userDetails(userDetails)
                     .build();
+        } else {
+            throw new BadCredentialsException("Bad credentials");
         }
-        return null;
     }
 
     private UserDetails getUserByPhoneNumber(String phoneNumber) {
