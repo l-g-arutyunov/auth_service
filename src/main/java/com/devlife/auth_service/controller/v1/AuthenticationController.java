@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 @RestController
 @RequestMapping("api/v1/auth/")
 @RequiredArgsConstructor
@@ -15,13 +17,15 @@ public class AuthenticationController {
     private final UserService userService;
 
     @PostMapping("signin")
-    public ResponseEntity<JwtResponse> signin(@RequestBody SigninRequest signinRequest) {
+    @io.swagger.v3.oas.annotations.parameters.RequestBody
+    public ResponseEntity<JwtResponse> signin(@RequestBody @Valid SigninRequest signinRequest) {
         JwtResponse jwtResponse = userService.signin(signinRequest);
         return ResponseEntity.ok(jwtResponse);
     }
 
     @PutMapping("signup")
-    public ResponseEntity<JwtResponse> signup(@RequestBody SignupRequest signupRequest) {
+    @io.swagger.v3.oas.annotations.parameters.RequestBody
+    public ResponseEntity<JwtResponse> signup(@RequestBody @Valid SignupRequest signupRequest) {
         JwtResponse jwtResponse = userService.signup(signupRequest);
         return ResponseEntity.ok(jwtResponse);
     }

@@ -2,6 +2,7 @@ package com.devlife.auth_service.service;
 
 import com.devlife.auth_service.enums.RoleEnum;
 import com.devlife.auth_service.feign.profile.PrfFeignService;
+import com.devlife.auth_service.feign.profile.model.InitProfileReq;
 import com.devlife.auth_service.model.RoleEntity;
 import com.devlife.auth_service.model.UserEntity;
 import com.devlife.auth_service.pojo.JwtResponse;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -124,7 +126,18 @@ public class UserService {
             contactInfo.put(2, signupRequest.getPhoneNumber());
         }
 
-        prfFeignService.initProfile(user.getId(), username, contactInfo, BEARER + token);
+        InitProfileReq initProfileReq = InitProfileReq.builder()
+                .externalId(user.getId())
+                .nickname(username)
+                .firstName(signupRequest.getFirstName())
+                .lastName(signupRequest.getLastName())
+                .middleName(signupRequest.getMiddleName())
+                .contactInfoList(contactInfo.entrySet().stream()
+                        .map(entry -> new InitProfileReq.ContactInfo(entry.getKey(), entry.getValue()))
+                        .collect(Collectors.toList()))
+                .build();
+
+        prfFeignService.initProfile(initProfileReq, BEARER + token);
 
         return jwtResponse;
     }
