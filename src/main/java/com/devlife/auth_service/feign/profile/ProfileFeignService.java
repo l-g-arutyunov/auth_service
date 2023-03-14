@@ -21,5 +21,7 @@ public interface ProfileFeignService {
 
     @Operation(summary = "Get external user id by auth user id from auth service", tags = {"user"})
     @GetMapping("/auth/{id}")
-    Long getUserIdByAuthId(@PathVariable("id") Long id);
+    Long getUserIdByAuthId(
+            @RequestHeader Map<String, String> headers,
+            @PathVariable("id") Long id);
 }

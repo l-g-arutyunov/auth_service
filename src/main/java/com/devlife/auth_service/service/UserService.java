@@ -53,8 +53,9 @@ public class UserService {
             userDetails = (UserDetailsImpl) getUserByEmail(authItem);
         }
         if (Objects.nonNull(userDetails)) {
+            String tokenTemp = tokenProvider.createToken(userDetails);
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userDetails.getUsername(), signinRequest.getPassword()));
-            Long externalUserId = prfFeignService.getUserIdByAuthId(userDetails.getId());
+            Long externalUserId = prfFeignService.getUserIdByAuthId(userDetails.getId(), BEARER + tokenTemp);
             return JwtResponse.builder()
                     .token(tokenProvider.createToken(userDetails, externalUserId))
                     .externalUserId(externalUserId)

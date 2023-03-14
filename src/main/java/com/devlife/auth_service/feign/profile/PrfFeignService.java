@@ -22,7 +22,9 @@ public class PrfFeignService {
         return authorization.getBody();
     }
 
-    public Long getUserIdByAuthId(Long userAuthId) {
-        return profileFeignService.getUserIdByAuthId(userAuthId);
+    public Long getUserIdByAuthId(Long userAuthId, String token) {
+        return profileFeignService.getUserIdByAuthId(
+                Collections.singletonMap("Authorization", token),
+                userAuthId);
     }
 }
