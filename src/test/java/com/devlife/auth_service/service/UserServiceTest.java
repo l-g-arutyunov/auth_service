@@ -2,6 +2,8 @@ package com.devlife.auth_service.service;
 
 import com.devlife.auth_service.enums.RoleEnum;
 import com.devlife.auth_service.feign.profile.PrfFeignService;
+import com.devlife.auth_service.feign.profile.model.AuthorizationDto;
+import com.devlife.auth_service.feign.profile.model.InitProfileReq;
 import com.devlife.auth_service.model.RoleEntity;
 import com.devlife.auth_service.model.UserEntity;
 import com.devlife.auth_service.pojo.JwtResponse;
@@ -13,6 +15,7 @@ import com.devlife.auth_service.security.UserDetailsImpl;
 import com.devlife.auth_service.security.UserDetailsServiceImpl;
 import com.devlife.auth_service.security.jwt.TokenProvider;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -47,9 +50,21 @@ class UserServiceTest {
             prfFeignService
     );
 
+    @AfterEach
+    void afterEach() {
+        verifyNoMoreInteractions(userRepository);
+        verifyNoMoreInteractions(roleRepository);
+        verifyNoMoreInteractions(tokenProvider);
+        verifyNoMoreInteractions(userDetailsService);
+        verifyNoMoreInteractions(authenticationManager);
+        verifyNoMoreInteractions(prfFeignService);
+    }
+
     @Test
     @DisplayName("signin test")
     void signin() {
+        Long externalUserId = 12345L;
+
         SigninRequest signinRequest = SigninRequest.builder()
                 .authItem("test@test.com")
                 .password("password")
@@ -70,25 +85,30 @@ class UserServiceTest {
 
         doReturn(userDetails).when(userDetailsService).loadUserByUsername(any());
         doReturn(Optional.of(userEntity)).when(userRepository).findByEmail("test@test.com");
-        doReturn("test_jwt").when(tokenProvider).createToken(userDetails);
+        doReturn(externalUserId).when(prfFeignService).getUserIdByAuthId(userEntity.getId());
+        doReturn("test_jwt").when(tokenProvider).createToken(userDetails, externalUserId);
 
         JwtResponse jwtResponse = userService.signin(signinRequest);
 
         JwtResponse referenceJwtResponse = JwtResponse.builder()
                 .token("test_jwt")
+                .externalUserId(externalUserId)
                 .userDetails((UserDetailsImpl) userDetails)
                 .build();
 
-        assertEquals(jwtResponse, referenceJwtResponse);
+        assertEquals(referenceJwtResponse, jwtResponse);
 
         verify(userRepository, times(1)).findByEmail(any());
         verify(userDetailsService, times(1)).loadUserByUsername(any());
-        verify(tokenProvider, times(1)).createToken(any());
+        verify(tokenProvider, times(1)).createToken(any(), eq(externalUserId));
+        verify(prfFeignService, times(1)).getUserIdByAuthId(userEntity.getId());
+        verify(authenticationManager, times(1)).authenticate(any());
     }
 
     @Test
     @DisplayName("signup test")
     void signup() {
+        Long externalUserId = 12345L;
         SignupRequest signupRequest = SignupRequest.builder()
                 .email("test@test.com")
                 .phoneNumber("88005553535")
@@ -120,13 +140,16 @@ class UserServiceTest {
         doReturn(false).when(userRepository).existsByEmail(any());
         doReturn(false).when(userRepository).existsByUsername(any());
         doReturn(userEntity).when(userRepository).save(any());
-        doReturn("test_jwt").when(tokenProvider).createToken(userDetails);
+        doReturn("test_jwt_without_id").when(tokenProvider).createToken(userDetails);
+        doReturn("test_jwt").when(tokenProvider).createToken(userDetails, externalUserId);
+        doReturn(AuthorizationDto.builder().id(externalUserId).build()).when(prfFeignService).initProfile(any(InitProfileReq.class), eq("Bearer test_jwt_without_id"));
 
 
         JwtResponse jwtResponse = userService.signup(signupRequest);
 
         JwtResponse referenceJwtResponse = JwtResponse.builder()
                 .token("test_jwt")
+                .externalUserId(externalUserId)
                 .userDetails((UserDetailsImpl) userDetails)
                 .build();
 
@@ -138,6 +161,8 @@ class UserServiceTest {
         verify(userRepository, times(1)).existsByUsername(any());
         verify(userRepository, times(1)).save(any());
         verify(tokenProvider, times(1)).createToken(any());
+        verify(tokenProvider, times(1)).createToken(any(), eq(externalUserId));
+        verify(prfFeignService, times(1)).initProfile(any(InitProfileReq.class), eq("Bearer test_jwt_without_id"));
     }
 
     @SneakyThrows

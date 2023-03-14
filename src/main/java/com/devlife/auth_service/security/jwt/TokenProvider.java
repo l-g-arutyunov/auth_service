@@ -51,6 +51,26 @@ public class TokenProvider {
                 .compact();
     }
 
+    public String createToken(UserDetails userDetails, Long externalUserId) {
+
+        Claims claims = Jwts.claims().setSubject(userDetails.getUsername());
+        claims.put("roles", getRoleNames(userDetails.getAuthorities().stream()
+                .map(x -> (RoleEntity) x)
+                .collect(Collectors.toList())));
+        claims.put("userDetail", userDetails);
+        claims.put("externalUserId", externalUserId);
+
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + validityInMilliseconds);
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(SignatureAlgorithm.HS512, secret)
+                .compact();
+    }
+
     public Authentication getAuthentication(String token) {
         UserDetails userDetails = this.userDetailsService.loadUserByUsername(getUsername(token));
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());

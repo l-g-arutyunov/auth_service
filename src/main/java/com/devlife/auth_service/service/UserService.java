@@ -2,6 +2,7 @@ package com.devlife.auth_service.service;
 
 import com.devlife.auth_service.enums.RoleEnum;
 import com.devlife.auth_service.feign.profile.PrfFeignService;
+import com.devlife.auth_service.feign.profile.model.AuthorizationDto;
 import com.devlife.auth_service.feign.profile.model.InitProfileReq;
 import com.devlife.auth_service.model.RoleEntity;
 import com.devlife.auth_service.model.UserEntity;
@@ -51,10 +52,12 @@ public class UserService {
         } else if (isEmail(authItem)) {
             userDetails = (UserDetailsImpl) getUserByEmail(authItem);
         }
-        if (userDetails != null) {
+        if (Objects.nonNull(userDetails)) {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userDetails.getUsername(), signinRequest.getPassword()));
+            Long externalUserId = prfFeignService.getUserIdByAuthId(userDetails.getId());
             return JwtResponse.builder()
-                    .token(tokenProvider.createToken(userDetails))
+                    .token(tokenProvider.createToken(userDetails, externalUserId))
+                    .externalUserId(externalUserId)
                     .userDetails(userDetails)
                     .build();
         } else {
@@ -112,11 +115,9 @@ public class UserService {
         checkUniqueData(user);
 
         UserDetailsImpl userDetails = UserDetailsImpl.build(userRepository.save(user));
-        String token = tokenProvider.createToken(userDetails);
-        JwtResponse jwtResponse = JwtResponse.builder()
-                .token(token)
-                .userDetails(userDetails)
-                .build();
+
+        //Temporary token for 1 query
+        String tokenTemp = tokenProvider.createToken(userDetails);
 
         Map<Integer, String> contactInfo = new HashMap<>();
         if (Objects.nonNull(signupRequest.getEmail())) {
@@ -137,7 +138,15 @@ public class UserService {
                         .collect(Collectors.toList()))
                 .build();
 
-        prfFeignService.initProfile(initProfileReq, BEARER + token);
+        AuthorizationDto authorizationDto = prfFeignService.initProfile(initProfileReq, BEARER + tokenTemp);
+
+        String token = tokenProvider.createToken(userDetails, authorizationDto.getId());
+
+        JwtResponse jwtResponse = JwtResponse.builder()
+                .token(token)
+                .userDetails(userDetails)
+                .externalUserId(authorizationDto.getId())
+                .build();
 
         return jwtResponse;
     }
