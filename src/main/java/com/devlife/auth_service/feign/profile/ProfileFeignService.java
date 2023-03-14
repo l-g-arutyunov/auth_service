@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@FeignClient(name = "profile-service", url = "${feign-services.profile-service}/api/v1/profile")
+@FeignClient(name = "profile-service", url = "${feign-services.profile-service}/api/v1/")
 public interface ProfileFeignService {
 
-    @PutMapping("/init")
+    @PutMapping("profile/init")
     @Operation(summary = "Init profile while authorization", tags = {"profile"})
     ResponseEntity<AuthorizationDto> initProfile(
             @RequestHeader Map<String, String> headers,
@@ -20,7 +20,7 @@ public interface ProfileFeignService {
     );
 
     @Operation(summary = "Get external user id by auth user id from auth service", tags = {"user"})
-    @GetMapping("/auth/{id}")
+    @GetMapping("user/auth/{id}")
     Long getUserIdByAuthId(
             @RequestHeader Map<String, String> headers,
             @PathVariable("id") Long id);

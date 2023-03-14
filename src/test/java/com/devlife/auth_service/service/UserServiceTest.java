@@ -85,7 +85,7 @@ class UserServiceTest {
 
         doReturn(userDetails).when(userDetailsService).loadUserByUsername(any());
         doReturn(Optional.of(userEntity)).when(userRepository).findByEmail("test@test.com");
-        doReturn(externalUserId).when(prfFeignService).getUserIdByAuthId(userEntity.getId());
+        doReturn(externalUserId).when(prfFeignService).getUserIdByAuthId(userEntity.getId(), anyString());
         doReturn("test_jwt").when(tokenProvider).createToken(userDetails, externalUserId);
 
         JwtResponse jwtResponse = userService.signin(signinRequest);
@@ -101,7 +101,7 @@ class UserServiceTest {
         verify(userRepository, times(1)).findByEmail(any());
         verify(userDetailsService, times(1)).loadUserByUsername(any());
         verify(tokenProvider, times(1)).createToken(any(), eq(externalUserId));
-        verify(prfFeignService, times(1)).getUserIdByAuthId(userEntity.getId());
+        verify(prfFeignService, times(1)).getUserIdByAuthId(userEntity.getId(), anyString());
         verify(authenticationManager, times(1)).authenticate(any());
     }
 
