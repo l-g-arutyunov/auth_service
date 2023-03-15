@@ -12,7 +12,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Builder
 public class GenderDto implements Serializable {
-
     private Long id;
     private String name;
 
